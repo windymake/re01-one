@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>windymakeの网站</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background-image: url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        min-height: 100vh;
+        color: #1a1a1a;
+      }
+
+      .top-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 30px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+        height: 42px;
+      }
+      .top-bar.hidden {
+        transform: translateY(-100%);
+      }
+      .menu-toggle {
+        background: none;
+        border: none;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #222;
+        cursor: pointer;
+        padding: 4px 12px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.2s;
+      }
+      .menu-toggle:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      .menu-toggle i {
+        font-style: normal;
+        font-size: 1.2rem;
+      }
+      .profile {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+      }
+      .profile-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #ddd
+          url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23999"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v1.2c0 .7.5 1.2 1.2 1.2h16.8c.7 0 1.2-.5 1.2-1.2v-1.2c0-3.2-6.4-4.8-9.6-4.8z"/></svg>')
+          center/60% no-repeat;
+        background-color: #eee;
+      }
+
+      .tree-panel {
+        position: fixed;
+        top: 52px;
+        left: 30px;
+        z-index: 200;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 18px;
+        padding: 24px 20px;
+        box-shadow:
+          0 20px 40px rgba(0, 0, 0, 0.1),
+          0 0 0 1px rgba(0, 0, 0, 0.05);
+        min-width: 240px;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        display: none;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition:
+          opacity 0.2s,
+          transform 0.2s;
+      }
+      .tree-panel.visible {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .tree ul {
+        list-style: none;
+        padding-left: 16px;
+      }
+      .tree li {
+        margin: 2px 0;
+      }
+      .node-btn {
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+        padding: 8px 10px;
+        font-size: 0.92rem;
+        color: #222;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: background 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .node-btn:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      .arrow {
+        display: inline-block;
+        width: 12px;
+        font-size: 0.7rem;
+        transition: transform 0.2s;
+        color: #888;
+      }
+      .expanded > .node-btn .arrow {
+        transform: rotate(90deg);
+      }
+      .category-btn {
+        font-weight: 500;
+      }
+      .leaf-btn {
+        font-weight: 400;
+      }
+      .disabled-node .node-btn {
+        color: #b0b0b0;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+      .coming-soon-tag {
+        font-size: 0.7rem;
+        color: #aaa;
+        margin-left: 4px;
+        font-weight: 400;
+      }
+
+      /* 主容器：填满横条下方到页面底部 */
+      .main-wrapper {
+        position: fixed;
+        top: 42px; /* 横条高度 */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 16px 20px 20px;
+        overflow-y: auto;
+        display: flex;
+        justify-content: center;
+      }
+
+      /* 大矩形：填满整个主容器 */
+      .main-card {
+        width: 100%;
+        max-width: 1400px;
+        background: rgba(255, 255, 255, 0.45);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border-radius: 28px;
+        box-shadow:
+          0 25px 50px rgba(0, 0, 0, 0.12),
+          0 0 0 1px rgba(255, 255, 255, 0.6);
+        padding: 40px 1.5em;
+        color: #1a1a1a;
+        overflow-y: auto;
+        min-height: 100%;
+      }
+
+      .card-content {
+        animation: fadeIn 0.3s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 20px;
+        padding: 6px 16px;
+        font-size: 0.9rem;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      }
+      .back-btn:hover {
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+      .back-btn i {
+        font-style: normal;
+        font-size: 1.1rem;
+      }
+
+      .repo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 18px;
+        margin-top: 0;
+      }
+      .repo-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .repo-card:hover {
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+        border-color: rgba(0, 0, 0, 0.12);
+      }
+      .repo-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #000;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .repo-name i {
+        font-style: normal;
+        opacity: 0.6;
+        font-size: 0.9rem;
+      }
+      .repo-desc {
+        font-size: 0.9rem;
+        color: #555;
+        line-height: 1.5;
+        margin-bottom: 14px;
+        flex: 1;
+      }
+      .repo-meta {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 0.8rem;
+        color: #666;
+      }
+      .repo-language {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .lang-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .repo-stars {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .links-list {
+        list-style: none;
+        margin-top: 12px;
+      }
+      .links-list li {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      }
+      .links-list li:last-child {
+        border-bottom: none;
+      }
+      .links-list a {
+        color: #111;
+        text-decoration: none;
+        font-size: 1.05rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.2s;
+      }
+      .links-list a:hover {
+        color: #555;
+        text-decoration: underline;
+      }
+      .no-links {
+        color: #888;
+        font-style: italic;
+        margin-top: 12px;
+      }
+
+      .info-block h2 {
+        font-size: 2rem;
+        font-weight: 400;
+        margin-bottom: 20px;
+        color: #000;
+      }
+      .info-block p {
+        font-size: 1.05rem;
+        line-height: 1.8;
+        margin-bottom: 10px;
+        color: #333;
+      }
+      .info-block .label {
+        font-weight: 500;
+        color: #000;
+        margin-right: 8px;
+      }
+
+      .link-list {
+        list-style: none;
+        margin-top: 8px;
+      }
+      .link-list li {
+        margin-bottom: 8px;
+      }
+      .link-list a {
+        color: #111;
+        text-decoration: none;
+        border-bottom: 1px solid #ccc;
+      }
+      .link-list a:hover {
+        border-bottom-color: #333;
+      }
+
+      /* 留言板样式 */
+      .comments-section {
+        margin-top: 40px;
+      }
+      .comments-section h3 {
+        font-weight: 400;
+        margin-bottom: 16px;
+        color: #222;
+      }
+      .comment-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .comment-form input,
+      .comment-form textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        transition: border-color 0.2s;
+      }
+      .comment-form input:focus,
+      .comment-form textarea:focus {
+        outline: none;
+        border-color: #888;
+      }
+      .comment-form textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+      .comment-submit {
+        align-self: flex-end;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        border: none;
+        padding: 8px 22px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .comment-submit:hover {
+        background: #333;
+      }
+
+      .comment-list {
+        list-style: none;
+      }
+      .comment-item {
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .comment-item:last-child {
+        border-bottom: none;
+      }
+      .comment-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: #666;
+      }
+      .comment-author {
+        font-weight: 500;
+        color: #000;
+      }
+      .comment-time {
+        color: #999;
+      }
+      .comment-text {
+        line-height: 1.6;
+        color: #333;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .no-comments {
+        color: #aaa;
+        font-style: italic;
+      }
+
+      @media (max-width: 600px) {
+        .top-bar {
+          padding: 4px 16px;
+        }
+        .main-wrapper {
+          padding: 10px 10px 10px;
+        }
+        .main-card {
+          padding: 32px 1em;
+        }
+        .repo-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top-bar" id="topBar">
+      <button class="menu-toggle" id="menuToggle"><i>☰</i> 菜单</button>
+      <div class="profile" id="profileBadge">
+        <img
+          class="profile-avatar"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v1.2c0 .7.5 1.2 1.2 1.2h16.8c.7 0 1.2-.5 1.2-1.2v-1.2c0-3.2-6.4-4.8-9.6-4.8z'/%3E%3C/svg%3E"
+          alt="头像"
+        />
+      </div>
+    </header>
+
+    <div class="tree-panel" id="treePanel">
+      <div class="tree" id="treeRoot"></div>
+    </div>
+
+    <!-- 主容器：填满剩余空间 -->
+    <div class="main-wrapper">
+      <main class="main-card">
+        <div class="card-content" id="cardContent"></div>
+      </main>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        query,
+        orderBy,
+        onSnapshot,
+        serverTimestamp,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import {
+        getAuth,
+        signInAnonymously,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+      // ✅ 你的真实 Firebase 配置
+      const firebaseConfig = {
+        apiKey: "AIzaSyAYUoL5LkO5VBmp2C478OGMt8FDCzWa8Z4",
+        authDomain: "project-5832072708000341765.firebaseapp.com",
+        databaseURL:
+          "https://project-5832072708000341765-default-rtdb.firebaseio.com",
+        projectId: "project-5832072708000341765",
+        storageBucket: "project-5832072708000341765.firebasestorage.app",
+        messagingSenderId: "770049355711",
+        appId: "1:770049355711:web:cdac9590b1883a5e6b7b0a",
+        measurementId: "G-8CLSD9X7CQ",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      const authReady = new Promise((resolve) => {
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            resolve(user);
+          } else {
+            signInAnonymously(auth)
+              .then(resolve)
+              .catch(() => resolve(null));
+          }
+        });
+      });
+
+      // 菜单数据
+      const menuData = [
+        {
+          label: "项目",
+          type: "category",
+          children: [
+            { label: "所有项目", type: "action", action: "project" },
+            { label: "更多项目", type: "disabled", hint: "即将上线" },
+          ],
+        },
+        {
+          label: "游戏",
+          type: "category",
+          children: [
+            { label: "所有游戏", type: "action", action: "game" },
+            { label: "游戏视频", type: "disabled", hint: "筹备中" },
+          ],
+        },
+        {
+          label: "社交",
+          type: "category",
+          children: [
+            {
+              label: "GitHub",
+              type: "action",
+              action: "link",
+              url: "https://github.com/windymake",
+            },
+            {
+              label: "B站",
+              type: "action",
+              action: "link",
+              url: "https://space.bilibili.com/3546732375836727?spm_id_from=333.1007.0.0",
+            },
+            {
+              label: "QQ空间",
+              type: "action",
+              action: "link",
+              url: "https://user.qzone.qq.com/2183478462",
+            },
+          ],
+        },
+        {
+          label: "杂类",
+          type: "category",
+          children: [
+            { label: "随笔", type: "disabled", hint: "即将上线" },
+            { label: "收藏", type: "disabled", hint: "整理中" },
+          ],
+        },
+      ];
+
+      const projectData = [
+        {
+          id: "proj1",
+          name: "个人网站",
+          desc: "极简风格的个人主页。",
+          lang: "HTML/CSS/JS",
+          color: "#e34c26",
+          stars: 12,
+          links: [{ text: "在线演示", url: "#" }],
+        },
+        {
+          id: "proj2",
+          name: "天气应用",
+          desc: "调用 OpenWeather API。",
+          lang: "React",
+          color: "#61dafb",
+          stars: 8,
+          links: [],
+        },
+        {
+          id: "proj3",
+          name: "待办事项",
+          desc: "Vue3 + Pinia。",
+          lang: "Vue",
+          color: "#42b883",
+          stars: 3,
+          links: [],
+        },
+      ];
+      const gameData = [
+        {
+          id: "game1",
+          name: "贪吃蛇",
+          desc: "Canvas 经典游戏。",
+          lang: "JavaScript",
+          color: "#f7df1e",
+          stars: 9,
+          links: [{ text: "试玩", url: "#" }],
+        },
+        {
+          id: "game2",
+          name: "扫雷",
+          desc: "复古扫雷。",
+          lang: "Vue",
+          color: "#42b883",
+          stars: 6,
+          links: [],
+        },
+      ];
+
+      let currentCategory = null;
+
+      function initComments(repoId) {
+        const container = document.getElementById("comments-container");
+        if (!container) return;
+
+        container.innerHTML = `<h3>💬 留言</h3>
+        <form class="comment-form" id="commentForm">
+          <input type="text" placeholder="你的昵称" id="commentAuthor" required maxlength="20">
+          <textarea placeholder="写下你的想法..." id="commentText" required maxlength="500"></textarea>
+          <button type="submit" class="comment-submit">提交留言</button>
+        </form>
+        <ul class="comment-list" id="commentList"><li class="no-comments">加载中...</li></ul>`;
+
+        const commentList = document.getElementById("commentList");
+
+        const q = query(
+          collection(db, "comments"),
+          orderBy("timestamp", "desc"),
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const comments = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.repoId === repoId) {
+              comments.push(data);
+            }
+          });
+          renderComments(comments, commentList);
+        });
+
+        document
+          .getElementById("commentForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const author = document
+              .getElementById("commentAuthor")
+              .value.trim();
+            const text = document.getElementById("commentText").value.trim();
+            if (!author || !text) return;
+
+            try {
+              await authReady;
+              await addDoc(collection(db, "comments"), {
+                repoId,
+                author,
+                text,
+                timestamp: serverTimestamp(),
+              });
+              document.getElementById("commentText").value = "";
+            } catch (error) {
+              alert("提交失败，请检查网络或Firestore权限。");
+            }
+          });
+
+        return () => unsubscribe();
+      }
+
+      function renderComments(comments, container) {
+        if (!comments.length) {
+          container.innerHTML =
+            '<li class="no-comments">暂无留言，来说两句吧</li>';
+          return;
+        }
+        container.innerHTML = comments
+          .map((c) => {
+            const time = c.timestamp
+              ? new Date(c.timestamp.seconds * 1000).toLocaleString("zh-CN")
+              : "刚刚";
+            return `
+          <li class="comment-item">
+            <div class="comment-meta">
+              <span class="comment-author">${escapeHtml(c.author)}</span>
+              <span class="comment-time">${time}</span>
+            </div>
+            <div class="comment-text">${escapeHtml(c.text)}</div>
+          </li>
+        `;
+          })
+          .join("");
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      let currentUnsubscribe = null;
+
+      function renderRepoList(title, repos, categoryKey) {
+        currentCategory = categoryKey;
+        const cardsHtml = repos
+          .map(
+            (repo, idx) => `
+        <div class="repo-card" data-index="${idx}" data-id="${repo.id}">
+          <div class="repo-name"><i>📁</i> ${repo.name}</div>
+          <div class="repo-desc">${repo.desc}</div>
+          <div class="repo-meta"><span class="repo-language"><span class="lang-dot" style="background:${repo.color};"></span>${repo.lang}</span><span class="repo-stars">⭐ ${repo.stars}</span></div>
+        </div>`,
+          )
+          .join("");
+        return `<button class="back-btn" id="listBackBtn"><i>←</i> 返回</button><div class="repo-grid" id="repoGrid">${cardsHtml}</div>`;
+      }
+
+      function renderLinkDetail(repo) {
+        const linksHtml = repo.links?.length
+          ? `<ul class="links-list">${repo.links.map((l) => `<li><a href="${l.url}" target="_blank">${l.text}</a></li>`).join("")}</ul>`
+          : '<p class="no-links">暂无链接</p>';
+        return `
+        <button class="back-btn" id="backToListBtn"><i>←</i> 返回列表</button>
+        <p style="color:#555; margin-bottom:18px;">${repo.desc}</p>
+        ${linksHtml}
+        <div class="comments-section" id="comments-container"></div>`;
+      }
+
+      function setupListBackButton() {
+        document
+          .getElementById("listBackBtn")
+          ?.addEventListener("click", () => handleAction({ action: "intro" }));
+      }
+
+      function attachRepoCardEvents(container, reposData) {
+        container.querySelectorAll(".repo-card").forEach((card) => {
+          card.addEventListener("click", () => {
+            const repo = reposData[parseInt(card.dataset.index)];
+            if (repo) {
+              if (currentUnsubscribe) currentUnsubscribe();
+
+              cardContent.innerHTML = renderLinkDetail(repo);
+              document
+                .getElementById("backToListBtn")
+                .addEventListener("click", () => {
+                  if (currentCategory === "project") {
+                    cardContent.innerHTML = renderRepoList(
+                      "📂 项目",
+                      projectData,
+                      "project",
+                    );
+                    attachRepoCardEvents(
+                      document.getElementById("repoGrid"),
+                      projectData,
+                    );
+                  } else if (currentCategory === "game") {
+                    cardContent.innerHTML = renderRepoList(
+                      "🎮 游戏",
+                      gameData,
+                      "game",
+                    );
+                    attachRepoCardEvents(
+                      document.getElementById("repoGrid"),
+                      gameData,
+                    );
+                  }
+                  setupListBackButton();
+                  if (currentUnsubscribe) currentUnsubscribe();
+                });
+              currentUnsubscribe = initComments(repo.id);
+            }
+          });
+        });
+      }
+
+      function buildTree(container, data) {
+        const ul = document.createElement("ul");
+        data.forEach((item) => {
+          const li = document.createElement("li");
+          if (item.type === "disabled") li.className = "disabled-node";
+          const btn = document.createElement("button");
+          btn.className = "node-btn";
+          if (item.type === "category") btn.classList.add("category-btn");
+          else btn.classList.add("leaf-btn");
+          btn.innerHTML =
+            (item.type === "category" ? '<span class="arrow">▶</span>' : "") +
+            item.label;
+          if (item.type === "disabled")
+            btn.innerHTML +=
+              ' <span class="coming-soon-tag">' + item.hint + "</span>";
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (item.type === "category") {
+              const childUl = li.querySelector(":scope > ul");
+              if (childUl) {
+                const hidden = childUl.style.display === "none";
+                childUl.style.display = hidden ? "block" : "none";
+                li.classList.toggle("expanded", hidden);
+              }
+            } else if (item.type === "action") {
+              handleAction(item);
+              document.getElementById("treePanel").classList.remove("visible");
+            }
+          });
+          li.appendChild(btn);
+          if (item.children) {
+            const childUl = buildTree(li, item.children);
+            li.appendChild(childUl);
+            childUl.style.display = "none";
+          }
+          ul.appendChild(li);
+        });
+        return ul;
+      }
+
+      const treeRoot = document.getElementById("treeRoot");
+      treeRoot.innerHTML = "";
+      treeRoot.appendChild(buildTree(treeRoot, menuData));
+
+      const menuToggle = document.getElementById("menuToggle");
+      const treePanel = document.getElementById("treePanel");
+      menuToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        treePanel.classList.toggle("visible");
+      });
+      document.addEventListener("click", (e) => {
+        if (!treePanel.contains(e.target) && e.target !== menuToggle)
+          treePanel.classList.remove("visible");
+      });
+
+      const cardContent = document.getElementById("cardContent");
+
+      function handleAction(item) {
+        if (currentUnsubscribe) currentUnsubscribe();
+        switch (item.action) {
+          case "intro":
+            currentCategory = null;
+            cardContent.innerHTML = `<div class="info-block"><h2>欢迎来访</h2><p>这是一个个人网站。</p><p>通过左上角菜单浏览项目、游戏，或访问社交链接。</p><p>点击右上角头像查看个人简介。</p><p style="margin-top:18px; color:#555;">设计 · 开发 · 分享</p></div>`;
+            break;
+          case "about":
+            currentCategory = null;
+            cardContent.innerHTML = `<div class="info-block"><button class="back-btn" id="aboutBackBtn"><i>←</i> 返回</button><h2>关于我</h2><p><span class="label">姓名</span> 你的名字</p><p><span class="label">领域</span> 产品设计 / 前端开发</p><p>...</p></div>`;
+            document
+              .getElementById("aboutBackBtn")
+              .addEventListener("click", () =>
+                handleAction({ action: "intro" }),
+              );
+            break;
+          case "project":
+            cardContent.innerHTML = renderRepoList(
+              "📂 项目",
+              projectData,
+              "project",
+            );
+            attachRepoCardEvents(
+              document.getElementById("repoGrid"),
+              projectData,
+            );
+            setupListBackButton();
+            break;
+          case "game":
+            cardContent.innerHTML = renderRepoList("🎮 游戏", gameData, "game");
+            attachRepoCardEvents(document.getElementById("repoGrid"), gameData);
+            setupListBackButton();
+            break;
+          case "link":
+            if (item.url) window.open(item.url, "_blank");
+            cardContent.innerHTML = `<div class="info-block"><h2>社交链接</h2><p>已在新标签页打开 <strong>${item.label}</strong></p><ul class="link-list"><li><a href="${item.url}" target="_blank">${item.url}</a></li></ul></div>`;
+            break;
+          default:
+            cardContent.innerHTML = `<div class="info-block"><h2>${item.label}</h2><p>开发中...</p></div>`;
+        }
+      }
+
+      // 顶部横条滚动显隐
+      const topBar = document.getElementById("topBar");
+      let lastScrollY = window.scrollY,
+        ticking = false;
+      function updateHeaderVisibility() {
+        const currentScrollY =
+          document.querySelector(".main-card").scrollTop || 0;
+        if (currentScrollY > lastScrollY && currentScrollY > 20)
+          topBar.classList.add("hidden");
+        else if (currentScrollY < lastScrollY)
+          topBar.classList.remove("hidden");
+        if (currentScrollY <= 5) topBar.classList.remove("hidden");
+        lastScrollY = currentScrollY;
+        ticking = false;
+      }
+      document.querySelector(".main-card").addEventListener("scroll", () => {
+        if (!ticking) {
+          window.requestAnimationFrame(() => {
+            updateHeaderVisibility();
+            ticking = false;
+          });
+          ticking = true;
+        }
+      });
+
+      document
+        .getElementById("profileBadge")
+        .addEventListener("click", () => handleAction({ action: "about" }));
+      handleAction({ action: "intro" });
+    </script>
+  </body>
+</html>
