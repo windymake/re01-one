@@ -1,0 +1,1930 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>windymakeの网站</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      html::-webkit-scrollbar {
+        display: none;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background-image: url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        min-height: 100vh;
+        color: #1a1a1a;
+        overflow: hidden;
+      }
+
+      #particleCanvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+      }
+      .access-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .access-modal-overlay.hidden {
+        display: none;
+      }
+      .access-modal {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(25px);
+        border-radius: 24px;
+        padding: 40px 36px;
+        text-align: center;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+        max-width: 420px;
+        width: 90%;
+        animation: modalIn 0.4s ease;
+        z-index: 10000;
+      }
+      @keyframes modalIn {
+        from {
+          opacity: 0;
+          transform: scale(0.9) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      .access-modal h2 {
+        font-size: 1.6rem;
+        font-weight: 400;
+        margin-bottom: 8px;
+        color: #111;
+      }
+      .access-modal p {
+        font-size: 0.95rem;
+        color: #666;
+        margin-bottom: 28px;
+      }
+      .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .access-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+        font-weight: 500;
+      }
+      .btn-visitor {
+        background: rgba(0, 0, 0, 0.06);
+        color: #333;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+      }
+      .btn-visitor:hover {
+        background: rgba(0, 0, 0, 0.1);
+      }
+      .btn-admin {
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .btn-admin:hover {
+        background: #333;
+      }
+      .admin-password-area {
+        margin-top: 16px;
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .admin-password-area input {
+        padding: 10px 14px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        font-size: 0.95rem;
+        text-align: center;
+      }
+      .btn-confirm {
+        padding: 10px;
+        border: none;
+        border-radius: 10px;
+        background: #1a1a1a;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+      }
+      .btn-confirm:hover {
+        background: #333;
+      }
+      .password-error {
+        color: #c00;
+        font-size: 0.85rem;
+        display: none;
+      }
+
+      .top-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 30px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+        height: 42px;
+      }
+      .top-bar.hidden {
+        transform: translateY(-100%);
+      }
+      .menu-toggle {
+        background: none;
+        border: none;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #222;
+        cursor: pointer;
+        padding: 4px 12px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.2s;
+      }
+      .menu-toggle:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      .top-bar-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .profile {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+      }
+      .profile-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        object-fit: cover;
+        background-color: #eee;
+      }
+      .share-btn {
+        background: none;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        font-size: 0.85rem;
+        color: #444;
+        cursor: pointer;
+        padding: 3px 12px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s;
+      }
+      .share-btn:hover {
+        background: rgba(0, 0, 0, 0.06);
+        border-color: rgba(0, 0, 0, 0.25);
+      }
+
+      .toast {
+        position: fixed;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 10px 24px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        backdrop-filter: blur(10px);
+        animation:
+          toastIn 0.3s ease,
+          toastOut 0.3s ease 1.7s forwards;
+        pointer-events: none;
+      }
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+      @keyframes toastOut {
+        from {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-10px);
+        }
+      }
+
+      .tree-panel {
+        position: fixed;
+        top: 52px;
+        left: 30px;
+        z-index: 200;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(25px);
+        border-radius: 18px;
+        padding: 24px 20px;
+        box-shadow:
+          0 20px 40px rgba(0, 0, 0, 0.1),
+          0 0 0 1px rgba(0, 0, 0, 0.05);
+        min-width: 240px;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        display: none;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition:
+          opacity 0.2s,
+          transform 0.2s;
+      }
+      .tree-panel.visible {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .tree ul {
+        list-style: none;
+        padding-left: 16px;
+      }
+      .tree li {
+        margin: 2px 0;
+      }
+      .node-btn {
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+        padding: 8px 10px;
+        font-size: 0.92rem;
+        color: #222;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: background 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .node-btn:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      .arrow {
+        display: inline-block;
+        width: 12px;
+        font-size: 0.7rem;
+        transition: transform 0.2s;
+        color: #888;
+      }
+      .expanded > .node-btn .arrow {
+        transform: rotate(90deg);
+      }
+      .category-btn {
+        font-weight: 500;
+      }
+      .leaf-btn {
+        font-weight: 400;
+      }
+      .disabled-node .node-btn {
+        color: #b0b0b0;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+      .coming-soon-tag {
+        font-size: 0.7rem;
+        color: #aaa;
+        margin-left: 4px;
+      }
+      .admin-tag {
+        font-size: 0.65rem;
+        background: #1a1a1a;
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 6px;
+      }
+
+      .main-card {
+        position: fixed;
+        top: 57px;
+        left: 25px;
+        right: 25px;
+        height: calc(100vh - 117px);
+        width: auto;
+        max-width: none;
+        background: rgba(255, 255, 255, 0.45);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border-radius: 28px;
+        box-shadow:
+          0 25px 50px rgba(0, 0, 0, 0.12),
+          0 0 0 1px rgba(255, 255, 255, 0.6);
+        padding: 40px 1.5em;
+        color: #1a1a1a;
+        overflow-y: auto;
+        z-index: 10;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      .main-card::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* 版本号样式 */
+      .version-tag {
+        position: absolute;
+        bottom: 10px;
+        right: 20px;
+        font-size: 0.7rem;
+        color: #999;
+        pointer-events: none;
+        z-index: 5;
+      }
+
+      .bottom-strip {
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 66.66%;
+        max-width: 933px;
+        min-height: 3em;
+        background: rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #555;
+        font-size: 0.7rem;
+        line-height: 1.4;
+        text-align: center;
+        padding: 8px 10px;
+        z-index: 9;
+      }
+
+      .card-content {
+        animation: fadeIn 0.3s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .bounce-text span {
+        display: inline-block;
+        animation: bounceChar 0.8s ease infinite alternate;
+      }
+      .bounce-text .space {
+        animation: none;
+        width: 0.25em;
+      }
+      @keyframes bounceChar {
+        from {
+          transform: translateY(0);
+        }
+        to {
+          transform: translateY(-14px);
+        }
+      }
+
+      .share-actions {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        margin-top: 24px;
+        flex-wrap: wrap;
+      }
+      .share-action-btn {
+        padding: 10px 24px;
+        border-radius: 20px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        background: rgba(255, 255, 255, 0.7);
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+      }
+      .share-action-btn:hover {
+        background: rgba(0, 0, 0, 0.06);
+      }
+      .share-action-btn.ok-btn:hover {
+        background: #e8f5e9;
+        border-color: #4caf50;
+      }
+      .share-action-btn.reject-btn:hover {
+        background: #fff3e0;
+        border-color: #ff9800;
+      }
+      .share-result-img {
+        max-width: 300px;
+        margin-top: 20px;
+        border-radius: 12px;
+      }
+      .text-center {
+        text-align: center;
+      }
+      .copy-link-inline {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        background: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin-left: 6px;
+        vertical-align: middle;
+      }
+      .copy-link-inline:hover {
+        background: rgba(0, 0, 0, 0.06);
+        border-color: rgba(0, 0, 0, 0.3);
+      }
+      .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 20px;
+        padding: 6px 16px;
+        font-size: 0.9rem;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      }
+      .back-btn:hover {
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      .profile-page {
+        max-width: 900px;
+        margin: 0 auto;
+        position: relative;
+      }
+      .switch-admin-btn {
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.06);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 20px;
+        padding: 8px 20px;
+        font-size: 0.9rem;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .switch-admin-btn:hover {
+        background: rgba(0, 0, 0, 0.12);
+      }
+      .inline-password-area {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+      }
+      .inline-password-area input {
+        padding: 8px 14px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        font-size: 0.9rem;
+        width: 200px;
+        text-align: center;
+      }
+      .btn-confirm-inline {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 10px;
+        background: #1a1a1a;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .password-error-inline {
+        color: #c00;
+        font-size: 0.85rem;
+      }
+
+      .profile-header {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+      .profile-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+      }
+      .profile-info {
+        flex: 1;
+      }
+      .profile-name-large {
+        font-size: 1.6rem;
+        font-weight: 500;
+        color: #000;
+        margin-bottom: 4px;
+      }
+      .profile-username {
+        font-size: 1.1rem;
+        color: #666;
+        font-weight: 300;
+        margin-bottom: 12px;
+      }
+      .profile-bio {
+        font-size: 1rem;
+        color: #333;
+        line-height: 1.6;
+        margin-bottom: 12px;
+      }
+      .profile-stats {
+        display: flex;
+        gap: 18px;
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 12px;
+      }
+      .profile-stats span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .profile-stats strong {
+        color: #000;
+      }
+      .profile-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.9rem;
+      }
+      .profile-links a {
+        color: #555;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: color 0.2s;
+      }
+      .profile-links a:hover {
+        color: #000;
+        text-decoration: underline;
+      }
+      .profile-section {
+        margin-bottom: 28px;
+      }
+      .profile-section h3 {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #000;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      }
+      .skill-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .skill-tag {
+        padding: 4px 12px;
+        background: rgba(0, 0, 0, 0.04);
+        border-radius: 14px;
+        font-size: 0.85rem;
+        color: #444;
+      }
+      .repo-list-mini {
+        list-style: none;
+      }
+      .repo-list-mini li {
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .repo-list-mini li:last-child {
+        border-bottom: none;
+      }
+      .repo-list-mini .repo-title {
+        font-weight: 500;
+        color: #000;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .repo-list-mini .repo-lang {
+        font-size: 0.8rem;
+        color: #888;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .repo-list-mini .repo-lang .mini-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .repo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 18px;
+        margin-top: 0;
+      }
+      .repo-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .repo-card:hover {
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+        border-color: rgba(0, 0, 0, 0.12);
+      }
+      .repo-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #000;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .repo-desc {
+        font-size: 0.9rem;
+        color: #555;
+        line-height: 1.5;
+        margin-bottom: 14px;
+        flex: 1;
+      }
+      .repo-meta {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 0.8rem;
+        color: #666;
+      }
+      .repo-language {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .lang-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .repo-stars {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .placeholder-card {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .placeholder-card:hover {
+        box-shadow: none;
+        transform: none;
+        border-color: rgba(0, 0, 0, 0.06);
+      }
+
+      .links-list {
+        list-style: none;
+        margin-top: 12px;
+      }
+      .links-list li {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      }
+      .links-list li:last-child {
+        border-bottom: none;
+      }
+      .links-list a {
+        color: #111;
+        text-decoration: none;
+        font-size: 1.05rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.2s;
+      }
+      .links-list a:hover {
+        color: #555;
+        text-decoration: underline;
+      }
+      .no-links {
+        color: #888;
+        font-style: italic;
+        margin-top: 12px;
+      }
+
+      .info-block h2 {
+        font-size: 2rem;
+        font-weight: 400;
+        margin-bottom: 20px;
+        color: #000;
+      }
+      .info-block p {
+        font-size: 1.05rem;
+        line-height: 1.8;
+        margin-bottom: 10px;
+        color: #333;
+      }
+      .link-list {
+        list-style: none;
+        margin-top: 8px;
+      }
+      .link-list li {
+        margin-bottom: 8px;
+      }
+      .link-list a {
+        color: #111;
+        text-decoration: none;
+        border-bottom: 1px solid #ccc;
+      }
+      .link-list a:hover {
+        border-bottom-color: #333;
+      }
+
+      .comments-section {
+        margin-top: 40px;
+      }
+      .toggle-comments-btn {
+        background: rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 20px;
+        padding: 8px 20px;
+        font-size: 0.9rem;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 16px;
+      }
+      .toggle-comments-btn:hover {
+        background: rgba(0, 0, 0, 0.08);
+      }
+      .comments-content {
+        margin-top: 8px;
+      }
+      .comment-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .comment-form input,
+      .comment-form textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        font-size: 0.95rem;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+      }
+      .comment-form input:focus,
+      .comment-form textarea:focus {
+        outline: none;
+        border-color: #888;
+      }
+      .comment-form textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+      .comment-submit {
+        align-self: flex-end;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        border: none;
+        padding: 8px 22px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+      .comment-submit:hover {
+        background: #333;
+      }
+      .comment-list {
+        list-style: none;
+      }
+      .comment-item {
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .comment-item:last-child {
+        border-bottom: none;
+      }
+      .comment-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: #666;
+      }
+      .comment-author {
+        font-weight: 500;
+        color: #000;
+      }
+      .comment-time {
+        color: #999;
+      }
+      .comment-text {
+        line-height: 1.6;
+        color: #333;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .no-comments {
+        color: #aaa;
+        font-style: italic;
+      }
+
+      .admin-filter {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .admin-filter select,
+      .admin-filter input {
+        padding: 8px 14px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        font-size: 0.95rem;
+        background: rgba(255, 255, 255, 0.8);
+      }
+      .delete-btn {
+        background: none;
+        border: none;
+        color: #c00;
+        cursor: pointer;
+        font-size: 0.85rem;
+        padding: 2px 8px;
+        border-radius: 4px;
+        transition: background 0.2s;
+      }
+      .delete-btn:hover {
+        background: rgba(255, 0, 0, 0.08);
+      }
+      .mode-switch {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 300;
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        backdrop-filter: blur(8px);
+        transition: background 0.2s;
+        display: none;
+      }
+      .mode-switch:hover {
+        background: rgba(0, 0, 0, 0.85);
+      }
+
+      @media (max-width: 600px) {
+        .top-bar {
+          padding: 4px 16px;
+        }
+        .main-card {
+          left: 10px;
+          right: 10px;
+          padding: 32px 1em;
+        }
+        .bottom-strip {
+          width: 80%;
+          font-size: 0.65rem;
+        }
+        .repo-grid {
+          grid-template-columns: 1fr;
+        }
+        .profile-header {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+        .profile-stats {
+          justify-content: center;
+        }
+        .profile-links {
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="particleCanvas"></canvas>
+
+    <div class="access-modal-overlay" id="accessModal">
+      <div class="access-modal">
+        <h2>选择访问方式</h2>
+        <p>请选择你的身份以继续</p>
+        <div class="btn-group" id="btnGroup">
+          <button class="access-btn btn-visitor" id="btnVisitor">
+            👤 访客访问
+          </button>
+          <button class="access-btn btn-admin" id="btnAdmin">
+            🔐 管理员登录
+          </button>
+        </div>
+        <div class="admin-password-area" id="adminPasswordArea">
+          <input
+            type="password"
+            id="adminPassword"
+            placeholder="请输入管理员密码"
+            maxlength="20"
+          />
+          <button class="btn-confirm" id="btnConfirmAdmin">确认登录</button>
+          <span class="password-error" id="passwordError"
+            >密码错误，请重试</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <header class="top-bar" id="topBar">
+      <button class="menu-toggle" id="menuToggle"><i>☰</i> 菜单</button>
+      <div class="top-bar-right">
+        <button class="share-btn" id="shareBtn">🔗 分享</button>
+        <div class="profile" id="profileBadge">
+          <img
+            class="profile-avatar"
+            src="https://i.imgs.ovh/2026/07/31/1dc7c75221b8412422ac7de2ccf5a517.png"
+            alt="头像"
+          />
+        </div>
+      </div>
+    </header>
+
+    <div class="tree-panel" id="treePanel">
+      <div class="tree" id="treeRoot"></div>
+    </div>
+
+    <main class="main-card" id="mainCard">
+      <div class="card-content" id="cardContent"></div>
+      <div class="version-tag">1.00.000</div>
+    </main>
+
+    <div class="bottom-strip" id="bottomStrip">
+      <span>如有侵权问题请联系2183478462@qq.com</span>
+      <span>感谢所有贡献链接/作品的作者(づ￣3￣)づ╭❤～</span>
+    </div>
+
+    <button class="mode-switch" id="modeSwitch">切换模式</button>
+
+    <script>
+      (function () {
+        const c = document.getElementById("particleCanvas"),
+          ctx = c.getContext("2d");
+        let w,
+          h,
+          p = [];
+        function rs() {
+          w = c.width = window.innerWidth;
+          h = c.height = window.innerHeight;
+        }
+        class Pt {
+          constructor() {
+            this.reset();
+          }
+          reset() {
+            this.x = Math.random() * w;
+            this.y = Math.random() * h;
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+            this.r = Math.random() * 1.5 + 0.5;
+            this.a = Math.random() * 0.4 + 0.1;
+          }
+          update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < 0 || this.x > w) this.vx *= -1;
+            if (this.y < 0 || this.y > h) this.vy *= -1;
+          }
+          draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${this.a})`;
+            ctx.fill();
+          }
+        }
+        function init() {
+          p = Array.from({ length: 80 }, () => new Pt());
+        }
+        function dl() {
+          for (let i = 0; i < p.length; i++) {
+            for (let j = i + 1; j < p.length; j++) {
+              const dx = p[i].x - p[j].x,
+                dy = p[i].y - p[j].y,
+                dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < 120) {
+                ctx.beginPath();
+                ctx.moveTo(p[i].x, p[i].y);
+                ctx.lineTo(p[j].x, p[j].y);
+                ctx.strokeStyle = `rgba(255,255,255,${0.08 * (1 - dist / 120)})`;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+              }
+            }
+          }
+        }
+        function an() {
+          ctx.clearRect(0, 0, w, h);
+          p.forEach((pt) => {
+            pt.update();
+            pt.draw();
+          });
+          dl();
+          requestAnimationFrame(an);
+        }
+        window.addEventListener("resize", rs);
+        rs();
+        init();
+        an();
+      })();
+    </script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        deleteDoc,
+        doc,
+        query,
+        orderBy,
+        onSnapshot,
+        serverTimestamp,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import {
+        getAuth,
+        signInAnonymously,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAYUoL5LkO5VBmp2C478OGMt8FDCzWa8Z4",
+        authDomain: "project-5832072708000341765.firebaseapp.com",
+        databaseURL:
+          "https://project-5832072708000341765-default-rtdb.firebaseio.com",
+        projectId: "project-5832072708000341765",
+        storageBucket: "project-5832072708000341765.firebasestorage.app",
+        messagingSenderId: "770049355711",
+        appId: "1:770049355711:web:cdac9590b1883a5e6b7b0a",
+        measurementId: "G-8CLSD9X7CQ",
+      };
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+      const authReady = new Promise((r) =>
+        onAuthStateChanged(auth, (u) =>
+          u
+            ? r(u)
+            : signInAnonymously(auth)
+                .then(r)
+                .catch(() => r(null)),
+        ),
+      );
+      const ADMIN_PASSWORD = "feng";
+      let currentMode = null,
+        currentCategory = null,
+        currentUnsubscribe = null;
+
+      const $ = (id) => document.getElementById(id);
+      const accessModal = $("accessModal"),
+        mainCard = $("mainCard"),
+        cardContent = $("cardContent");
+      const bottomStrip = $("bottomStrip"),
+        topBar = $("topBar");
+
+      const projectData = [
+        {
+          id: "proj1",
+          name: "个人网站",
+          desc: "极简风格的个人主页。",
+          lang: "HTML/CSS/JS",
+          color: "#e34c26",
+          stars: 12,
+          links: [{ text: "你使得是什么(｀ﾍ´)=3", url: "#" }],
+        },
+        {
+          id: "proj2",
+          name: "天气查询",
+          desc: "去别的网站查询吧!(￣へ￣)",
+          lang: "React",
+          color: "#61dafb",
+          stars: 8,
+          links: [{ text: "快去吧！", url: "https://www.windy.com/" }],
+        },
+        {
+          id: "proj3",
+          name: "待办事项",
+          desc: "Vue3 + Pinia。",
+          lang: "Vue",
+          color: "#42b883",
+          stars: 3,
+          links: [
+            { text: "留言一些功能我会考虑做(看我想不想的起来jjj)", url: "#" },
+          ],
+        },
+      ];
+      const minecraftItems = [
+        {
+          id: "mc_1",
+          name: "PCL启动器",
+          desc: "龙猫NB!!!自带清C盘的小工具",
+          lang: "Java",
+          color: "#b07219",
+          stars: 50,
+          links: [
+            {
+              text: "给伟大的龙猫赞助一下吧",
+              url: "https://ifdian.net/a/LTcat",
+            },
+            {
+              text: "官方链接",
+              url: "https://afdian.com/p/0164034c016c11ebafcb52540025c377?_gl=1*bds9yj*_ga*MjA4ODY1NDUxMi4xNzg2NTEzMjQw*_ga_6STWKR7T9E*czE3ODY1MTMyMzkkbzEkZzEkdDE3ODY1MTM2NTIkajQ2JGwwJGgxMzM4MTIxMjgw",
+            },
+          ],
+          placeholder: false,
+        },
+        {
+          id: "mc_2",
+          name: "HMCL启动器",
+          desc: "自带联机功能的启动器,与损友开黑的不二之选",
+          lang: "Forge",
+          color: "#b07219",
+          stars: 30,
+          links: [
+            { text: "官方链接", url: "https://hmcl.huangyuhui.net/" },
+            {
+              text: "下载地址2(下载速度更快)",
+              url: "https://bbsmc.net/software/hmcl",
+            },
+          ],
+          placeholder: false,
+        },
+        {
+          id: "mc_3",
+          name: "PCL_CE(社区版)",
+          desc: "非官方版本!(开源二创)BUT!!!肥肠NB!!!自带收藏模组的功能(还有许多NB的功能)强烈推荐!!!",
+          lang: "Java",
+          color: "#b07219",
+          stars: 20,
+          links: [
+            {
+              text: "官方链接(不会下的联系我)(是爷们都自己下)",
+              url: "github.com/PCL-Community/PCL2-CE",
+            },
+            { text: "下载地址2(网盘方便)", url: "pan.quark.cn/s/1f44a8184824" },
+          ],
+          placeholder: false,
+        },
+        {
+          id: "mc_4",
+          name: "落幕曲",
+          desc: "末影蘸酱NB迄今为止玩得最爽的整合包!!!!",
+          lang: "Java",
+          color: "#b07219",
+          stars: 9999,
+          links: [
+            { text: "官方链接", url: "https://pan.quark.cn/s/4e69ec77f734" },
+          ],
+          placeholder: false,
+        },
+        {
+          id: "mc_5",
+          name: "勇者之章 3",
+          desc: "适合M和喜欢当虫且的，玩它不是在当蛆就是在当蛆的路上。",
+          lang: "Java",
+          color: "#b07219",
+          stars: 15,
+          links: [
+            {
+              text: "官方链接(百度网盘！？慢慢！？)",
+              url: "https://www.mcmod.cn/modpack/1054.html",
+            },
+            {
+              text: "下载地址2(这是别人的其它网盘！？快快！？)",
+              url: "https://pan.huang1111.cn/s/jRV1ouy",
+            },
+          ],
+          placeholder: false,
+        },
+        {
+          id: "mc_6",
+          name: "涟漪之篇",
+          desc: "同时玩MC和崩铁的不要错过！！！爽包",
+          lang: "Java",
+          color: "#b07219",
+          stars: 10,
+          links: [
+            { text: "官方链接", url: "https://pan.quark.cn/s/37d4b1b7193c" },
+          ],
+          placeholder: false,
+        },
+        {
+          id: "mc_placeholder",
+          name: "更多整合包",
+          desc: "敬请期待...",
+          lang: "",
+          color: "#ccc",
+          stars: 0,
+          links: [],
+          placeholder: true,
+        },
+      ];
+      const pvzItems = [
+        {
+          id: "pvz_1",
+          name: "PVZ融合版",
+          desc: "飘老板NB(诸神之战的那个)",
+          lang: "java",
+          color: "#f34b7d",
+          stars: 42,
+          links: [
+            {
+              text: "官网(关注消息/玩法介绍)",
+              url: "https://wiki.biligame.com/pvzrh/%E9%A6%96%E9%A1%B5",
+            },
+            {
+              text: "官方下载地址",
+              url: "https://pan.quark.cn/s/f1c17a55dca9",
+            },
+          ],
+          placeholder: false,
+        },
+      ];
+
+      let mainCardTop = 57,
+        targetTop = 57,
+        animFrame = null;
+      const MIN_TOP = -200,
+        MAX_TOP = 57;
+
+      function setCardHeight() {
+        const h = window.innerHeight - MAX_TOP - 60;
+        mainCard.style.height = Math.max(h, 200) + "px";
+      }
+
+      function updateLayout(top) {
+        mainCard.style.top = top + "px";
+        const cardBottom = top + mainCard.offsetHeight;
+        bottomStrip.style.top = cardBottom + 10 + "px";
+      }
+
+      function setMainCardTop(top) {
+        mainCardTop = top;
+        updateLayout(top);
+      }
+
+      function animateMainCard() {
+        const diff = targetTop - mainCardTop;
+        if (Math.abs(diff) < 0.5) {
+          setMainCardTop(targetTop);
+          animFrame = null;
+          return;
+        }
+        mainCardTop += diff * 0.08;
+        setMainCardTop(mainCardTop);
+        animFrame = requestAnimationFrame(animateMainCard);
+      }
+
+      function updateTarget(deltaY) {
+        targetTop = Math.min(
+          MAX_TOP,
+          Math.max(MIN_TOP, targetTop - deltaY * 0.2),
+        );
+        if (!animFrame) animFrame = requestAnimationFrame(animateMainCard);
+      }
+
+      let lastWheelDirection = 0;
+      function updateTopBar(deltaY) {
+        if (deltaY > 0 && lastWheelDirection !== 1) {
+          topBar.classList.add("hidden");
+          lastWheelDirection = 1;
+        } else if (deltaY < 0 && lastWheelDirection !== -1) {
+          topBar.classList.remove("hidden");
+          lastWheelDirection = -1;
+        }
+      }
+
+      window.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          updateTopBar(e.deltaY);
+          updateTarget(e.deltaY);
+        },
+        { passive: false },
+      );
+      window.addEventListener("resize", () => {
+        setCardHeight();
+        if (mainCardTop > MAX_TOP) {
+          targetTop = MAX_TOP;
+          mainCardTop = MAX_TOP;
+          setMainCardTop(MAX_TOP);
+        } else updateLayout(mainCardTop);
+      });
+
+      function showToast(msg) {
+        const t = document.createElement("div");
+        t.className = "toast";
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2000);
+      }
+      function copyToClipboard(text) {
+        if (navigator.clipboard?.writeText)
+          navigator.clipboard
+            .writeText(text)
+            .then(() => showToast("已复制网址"))
+            .catch(() => {});
+        else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          showToast("已复制网址");
+        }
+      }
+      function makeBounceText(text) {
+        return [...text]
+          .map((ch, i) =>
+            ch === " "
+              ? `<span class="space" style="animation-delay:${i * 0.1}s"> </span>`
+              : `<span style="animation-delay:${i * 0.1}s">${ch}</span>`,
+          )
+          .join("");
+      }
+      function escapeHtml(str) {
+        const d = document.createElement("div");
+        d.textContent = str;
+        return d.innerHTML;
+      }
+
+      function setMode(mode) {
+        currentMode = mode;
+        accessModal.classList.add("hidden");
+        $("modeSwitch").style.display = mode === "admin" ? "block" : "none";
+        if (mode === "admin")
+          $("modeSwitch").textContent = "🔐 管理员模式 · 点击切换";
+        buildMenuForMode();
+        handleAction({ action: "intro" });
+        targetTop = MAX_TOP;
+        mainCardTop = MAX_TOP;
+        setCardHeight();
+        setMainCardTop(MAX_TOP);
+      }
+      $("modeSwitch").addEventListener("click", () => setMode("visitor"));
+
+      $("btnVisitor").addEventListener("click", () => setMode("visitor"));
+      $("btnAdmin").addEventListener("click", () => {
+        $("btnGroup").style.display = "none";
+        $("adminPasswordArea").style.display = "flex";
+        $("passwordError").style.display = "none";
+        $("adminPassword").focus();
+      });
+      $("btnConfirmAdmin").addEventListener("click", () => {
+        if ($("adminPassword").value === ADMIN_PASSWORD) setMode("admin");
+        else {
+          $("passwordError").style.display = "block";
+          $("adminPassword").value = "";
+        }
+      });
+      $("adminPassword").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("btnConfirmAdmin").click();
+      });
+
+      function handleShare() {
+        copyToClipboard(location.href);
+        showShareDialog();
+      }
+      function showShareDialog() {
+        if (currentUnsubscribe) currentUnsubscribe();
+        currentCategory = "share";
+        cardContent.innerHTML = `<div class="info-block text-center"><button class="back-btn" id="sbBtn"><i>←</i> 返回</button><p style="font-size:1.4rem;margin-bottom:24px;">求求你了，帮孩子推广下吧<button class="copy-link-inline" id="icBtn">🔗</button></p><div class="share-actions"><button class="share-action-btn ok-btn" id="okBtn">OK我帮哩</button><button class="share-action-btn reject-btn" id="rjBtn">开心拒绝:)</button></div></div>`;
+        $("sbBtn").addEventListener("click", () =>
+          handleAction({ action: "intro" }),
+        );
+        $("icBtn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          copyToClipboard(location.href);
+        });
+        $("okBtn").addEventListener("click", () => {
+          cardContent.innerHTML = `<div class="info-block text-center"><button class="back-btn" id="rbBtn"><i>←</i> 返回</button><p style="font-size:1.3rem;margin-top:24px;">你真是个好仁！</p><img src="https://i.imgs.ovh/2026/08/12/d554625b4a4e462fe08df3af4f9ae305.webp" alt="thank you" style="max-width:300px; margin-top:20px; border-radius:12px;"/></div>`;
+          $("rbBtn").addEventListener("click", () =>
+            handleAction({ action: "intro" }),
+          );
+        });
+        $("rjBtn").addEventListener("click", () => {
+          cardContent.innerHTML = `<div class="info-block text-center"><button class="back-btn" id="rbBtn"><i>←</i> 返回</button><p style="font-size:1.3rem;margin-top:24px;">送你一条Yellow and purple 小 fish</p><img class="share-result-img" src="https://i.imgs.ovh/2026/08/12/f7660a4318ecc7bd041ff3ce35c32486.jpg" alt="fish"/></div>`;
+          $("rbBtn").addEventListener("click", () =>
+            handleAction({ action: "intro" }),
+          );
+        });
+      }
+      $("shareBtn").addEventListener("click", handleShare);
+
+      function getMenuData() {
+        const ia = currentMode === "admin";
+        return [
+          {
+            label: "项目",
+            type: "category",
+            children: [
+              { label: "所有项目", type: "action", action: "project" },
+              { label: "更多项目", type: "disabled", hint: "即将上线" },
+            ],
+          },
+          {
+            label: "游戏",
+            type: "category",
+            children: [
+              { label: "Minecraft", type: "action", action: "minecraft" },
+              { label: "PVZ", type: "action", action: "pvz" },
+            ],
+          },
+          {
+            label: "社交",
+            type: "category",
+            children: [
+              {
+                label: "GitHub",
+                type: "action",
+                action: "link",
+                url: "https://github.com/windymake",
+              },
+              {
+                label: "B站",
+                type: "action",
+                action: "link",
+                url: "https://space.bilibili.com/3546732375836727",
+              },
+            ],
+          },
+          {
+            label: "杂类",
+            type: "category",
+            children: [
+              ...(ia
+                ? [
+                    {
+                      label: "📋 管理留言",
+                      type: "action",
+                      action: "admin",
+                      adminOnly: true,
+                    },
+                  ]
+                : []),
+              { label: "随笔", type: "disabled", hint: "即将上线" },
+              { label: "收藏", type: "disabled", hint: "整理中" },
+            ],
+          },
+        ];
+      }
+      function buildMenuForMode() {
+        const r = $("treeRoot");
+        r.innerHTML = "";
+        r.appendChild(buildTree(r, getMenuData()));
+      }
+
+      function initComments(repoId) {
+        const ct = $("comments-container");
+        if (!ct) return;
+        ct.innerHTML = `<button class="toggle-comments-btn" id="ctBtn">💬 展开留言</button><div class="comments-content" id="ccDiv" style="display:none;"><form class="comment-form" id="cfForm"><input type="text" placeholder="昵称" id="cfAuthor" required maxlength="20"><textarea placeholder="写下想法..." id="cfText" required maxlength="500"></textarea><button type="submit" class="comment-submit">提交</button></form><ul class="comment-list" id="clList"><li class="no-comments">加载中...</li></ul></div>`;
+        const tb = $("ctBtn"),
+          cd = $("ccDiv");
+        tb.addEventListener("click", () => {
+          const h = cd.style.display === "none";
+          cd.style.display = h ? "block" : "none";
+          tb.textContent = h ? "💬 收起留言" : "💬 展开留言";
+        });
+        const qr = query(
+          collection(db, "comments"),
+          orderBy("timestamp", "desc"),
+        );
+        const unsub = onSnapshot(qr, (snap) => {
+          const cm = [];
+          snap.forEach((d) => {
+            const dd = d.data();
+            if (dd.repoId === repoId) cm.push(dd);
+          });
+          renderComments(cm, $("clList"));
+        });
+        $("cfForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const a = $("cfAuthor").value.trim(),
+            t = $("cfText").value.trim();
+          if (!a || !t) return;
+          try {
+            await authReady;
+            await addDoc(collection(db, "comments"), {
+              repoId,
+              author: a,
+              text: t,
+              timestamp: serverTimestamp(),
+            });
+            $("cfText").value = "";
+          } catch {}
+        });
+        return () => unsub();
+      }
+      function renderComments(cm, ct) {
+        if (!cm.length) {
+          ct.innerHTML = '<li class="no-comments">暂无留言</li>';
+          return;
+        }
+        ct.innerHTML = cm
+          .map((c) => {
+            const t = c.timestamp
+              ? new Date(c.timestamp.seconds * 1000).toLocaleString("zh-CN")
+              : "刚刚";
+            return `<li class="comment-item"><div class="comment-meta"><span class="comment-author">${escapeHtml(c.author)}</span><span class="comment-time">${t}</span></div><div class="comment-text">${escapeHtml(c.text)}</div></li>`;
+          })
+          .join("");
+      }
+
+      function initAdminPanel() {
+        const ct = $("comments-container");
+        if (!ct) return;
+        const ar = [
+          ...projectData.map((p) => ({ id: p.id, name: p.name })),
+          ...minecraftItems
+            .filter((i) => !i.placeholder)
+            .map((i) => ({ id: i.id, name: i.name })),
+          ...pvzItems
+            .filter((i) => !i.placeholder)
+            .map((i) => ({ id: i.id, name: i.name })),
+        ];
+        ct.innerHTML = `<button class="toggle-comments-btn" id="atBtn">💬 展开留言管理</button><div class="comments-content" id="acDiv" style="display:none;"><div class="admin-filter"><select id="afRepo"><option value="all">全部</option>${ar.map((r) => `<option value="${r.id}">${r.name}</option>`).join("")}</select><input type="text" id="afSearch" placeholder="搜索..."/></div><ul class="comment-list" id="clList"><li class="no-comments">加载中...</li></ul></div>`;
+        const tb = $("atBtn"),
+          cd = $("acDiv");
+        tb.addEventListener("click", () => {
+          const h = cd.style.display === "none";
+          cd.style.display = h ? "block" : "none";
+          tb.textContent = h ? "💬 收起留言管理" : "💬 展开留言管理";
+        });
+        let ac = [];
+        const qr = query(
+          collection(db, "comments"),
+          orderBy("timestamp", "desc"),
+        );
+        const unsub = onSnapshot(qr, (snap) => {
+          ac = [];
+          snap.forEach((d) => ac.push({ ...d.data(), docId: d.id }));
+          renderFiltered();
+        });
+        function renderFiltered() {
+          let fl = ac;
+          if ($("afRepo").value !== "all")
+            fl = fl.filter((c) => c.repoId === $("afRepo").value);
+          const kw = $("afSearch").value.trim().toLowerCase();
+          if (kw)
+            fl = fl.filter(
+              (c) =>
+                c.text.toLowerCase().includes(kw) ||
+                c.author.toLowerCase().includes(kw),
+            );
+          if (!fl.length) {
+            $("clList").innerHTML = '<li class="no-comments">没找到</li>';
+            return;
+          }
+          $("clList").innerHTML = fl
+            .map((c) => {
+              const t = c.timestamp
+                ? new Date(c.timestamp.seconds * 1000).toLocaleString("zh-CN")
+                : "刚刚";
+              const rn =
+                ar.find((r) => r.id === c.repoId)?.name || c.repoId || "?";
+              return `<li class="comment-item"><div class="comment-meta"><span><span class="comment-author">${escapeHtml(c.author)}</span><span style="color:#888;font-size:0.8rem;"> · ${escapeHtml(rn)}</span></span><span><span class="comment-time">${t}</span><button class="delete-btn" data-docid="${c.docId}">🗑</button></span></div><div class="comment-text">${escapeHtml(c.text)}</div></li>`;
+            })
+            .join("");
+          document.querySelectorAll(".delete-btn").forEach((b) =>
+            b.addEventListener("click", async (e) => {
+              e.stopPropagation();
+              if (confirm("确定删除？")) {
+                try {
+                  await deleteDoc(
+                    doc(db, "comments", b.getAttribute("data-docid")),
+                  );
+                } catch {}
+              }
+            }),
+          );
+        }
+        $("afRepo").addEventListener("change", renderFiltered);
+        $("afSearch").addEventListener("input", renderFiltered);
+        return () => unsub();
+      }
+
+      function renderRepoList(repos, ck) {
+        currentCategory = ck;
+        return `<button class="back-btn" id="lbBtn"><i>←</i> 返回</button><div class="repo-grid" id="rgGrid">${repos.map((r, i) => `<div class="repo-card" data-index="${i}" data-id="${r.id}"><div class="repo-name"><i>📁</i> ${r.name}</div><div class="repo-desc">${r.desc}</div><div class="repo-meta"><span class="repo-language"><span class="lang-dot" style="background:${r.color};"></span>${r.lang}</span><span class="repo-stars">⭐ ${r.stars}</span></div></div>`).join("")}</div>`;
+      }
+      function renderLinkDetail(repo) {
+        return `<button class="back-btn" id="blBtn"><i>←</i> 返回列表</button><p style="color:#555;margin-bottom:18px;">${repo.desc}</p>${repo.links?.length ? `<ul class="links-list">${repo.links.map((l) => `<li><a href="${l.url}" target="_blank">${l.text}</a></li>`).join("")}</ul>` : '<p class="no-links">暂无链接</p>'}<div class="comments-section" id="comments-container"></div>`;
+      }
+      function renderGameCards(items, bk) {
+        currentCategory = bk;
+        return `<button class="back-btn" id="gbBtn"><i>←</i> 返回</button><div class="repo-grid" id="rgGrid">${items.map((r, i) => (r.placeholder ? `<div class="repo-card placeholder-card"><div class="repo-name"><i>📁</i> ${r.name}</div><div class="repo-desc">${r.desc}</div><div class="repo-meta"><span class="repo-language"><span class="lang-dot" style="background:${r.color};"></span>${r.lang}</span><span class="repo-stars">⭐ ${r.stars}</span></div></div>` : `<div class="repo-card" data-index="${i}" data-type="${bk}"><div class="repo-name"><i>📁</i> ${r.name}</div><div class="repo-desc">${r.desc}</div><div class="repo-meta"><span class="repo-language"><span class="lang-dot" style="background:${r.color};"></span>${r.lang}</span><span class="repo-stars">⭐ ${r.stars}</span></div></div>`)).join("")}</div>`;
+      }
+
+      function attachRepoCardEvents(ct, repos) {
+        ct.querySelectorAll(".repo-card").forEach((c) =>
+          c.addEventListener("click", () => {
+            const r = repos[parseInt(c.dataset.index)];
+            if (r) {
+              if (currentUnsubscribe) currentUnsubscribe();
+              cardContent.innerHTML = renderLinkDetail(r);
+              $("blBtn").addEventListener("click", () => {
+                if (currentCategory === "project") {
+                  cardContent.innerHTML = renderRepoList(
+                    projectData,
+                    "project",
+                  );
+                  attachRepoCardEvents($("rgGrid"), projectData);
+                }
+                setupListBackBtn();
+                if (currentUnsubscribe) currentUnsubscribe();
+              });
+              currentUnsubscribe = initComments(r.id);
+            }
+          }),
+        );
+      }
+      function attachGameCardEvents(ct, items, bk) {
+        ct.querySelectorAll(".repo-card:not(.placeholder-card)").forEach((c) =>
+          c.addEventListener("click", () => {
+            const d = items[parseInt(c.dataset.index)];
+            handleAction({ action: `${bk}_detail`, data: d, backAction: bk });
+          }),
+        );
+      }
+      function setupListBackBtn() {
+        $("lbBtn")?.addEventListener("click", () =>
+          handleAction({ action: "intro" }),
+        );
+      }
+
+      function buildTree(ct, data) {
+        const ul = document.createElement("ul");
+        data.forEach((item) => {
+          const li = document.createElement("li");
+          if (item.type === "disabled") li.className = "disabled-node";
+          const btn = document.createElement("button");
+          btn.className = "node-btn";
+          if (item.type === "category") btn.classList.add("category-btn");
+          else btn.classList.add("leaf-btn");
+          let lh = item.label;
+          if (item.adminOnly) lh += ' <span class="admin-tag">管理员</span>';
+          btn.innerHTML =
+            (item.type === "category" ? '<span class="arrow">▶</span>' : "") +
+            lh;
+          if (item.type === "disabled")
+            btn.innerHTML +=
+              ' <span class="coming-soon-tag">' + item.hint + "</span>";
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (item.type === "category") {
+              const cu = li.querySelector(":scope > ul");
+              if (cu) {
+                const h = cu.style.display === "none";
+                cu.style.display = h ? "block" : "none";
+                li.classList.toggle("expanded", h);
+              }
+            } else if (item.type === "action") {
+              handleAction(item);
+              $("treePanel").classList.remove("visible");
+            }
+          });
+          li.appendChild(btn);
+          if (item.children) {
+            const cu = buildTree(li, item.children);
+            li.appendChild(cu);
+            cu.style.display = "none";
+          }
+          ul.appendChild(li);
+        });
+        return ul;
+      }
+
+      $("menuToggle").addEventListener("click", (e) => {
+        e.stopPropagation();
+        $("treePanel").classList.toggle("visible");
+      });
+      document.addEventListener("click", (e) => {
+        const tp = $("treePanel");
+        if (!tp.contains(e.target) && e.target !== $("menuToggle"))
+          tp.classList.remove("visible");
+      });
+
+      function handleAction(item) {
+        if (currentUnsubscribe) currentUnsubscribe();
+        switch (item.action) {
+          case "intro":
+            currentCategory = null;
+            const ttl = currentMode === "admin" ? "吾主，欢迎回来" : "欢迎来访";
+            const d1 =
+              currentMode === "admin" ? "快来查看留言吧。" : "这是多功能网站。";
+            const d2 =
+              currentMode === "admin"
+                ? "杂类中可管理全站留言。"
+                : "通过左上角菜单浏览项目、游戏，或访问社交链接。";
+            const d3 =
+              currentMode === "admin" ? "" : "点击右上角头像查看作者个人简介。";
+            const extraText =
+              currentMode !== "admin"
+                ? `<p>部分内容为搬运大神们的作品链接(请仔细甄别)</p>
+               <p>更多功能请大家自主探索</p>
+               <p>纯资源交流网站，禁止上传任何违法违规内容</p>
+               <p>网站试运行请大家积极反馈</p>`
+                : "";
+            cardContent.innerHTML = `<div class="info-block"><h2 class="bounce-text">${makeBounceText(ttl)}</h2><p>${d1}</p><p>${d2}</p>${d3 ? `<p>${d3}</p>` : ""}${extraText}<p style="margin-top:18px;color:#555;">设计 · 开发 · 分享</p></div>`;
+            break;
+          case "about":
+            currentCategory = null;
+            const iv = currentMode === "visitor";
+            cardContent.innerHTML = `<div class="profile-page"><button class="back-btn" id="abBtn"><i>←</i> 返回</button>${iv ? `<button class="switch-admin-btn" id="saBtn">🔐 切换管理员</button>` : ""}<div class="profile-header"><img class="profile-avatar-large" src="https://i.imgs.ovh/2026/07/31/1dc7c75221b8412422ac7de2ccf5a517.png" alt="头像"/><div class="profile-info"><div class="profile-name-large">Windymake</div><div class="profile-username">windymake</div><div class="profile-bio">🎨 设计师 / 💻 开发者 / 🎮 游戏爱好者</div><div class="profile-stats"><span>👥 <strong>12</strong> followers</span><span>·</span><span><strong>8</strong> following</span><span>·</span><span>⭐ <strong>42</strong></span></div><div class="profile-links"><a href="https://github.com/windymake" target="_blank">🐙 GitHub</a><a href="https://space.bilibili.com/3546732375836727" target="_blank">📺 B站</a></div></div></div><div class="profile-section"><h3>📌 技能</h3><div class="skill-tags"><span class="skill-tag">HTML/CSS</span><span class="skill-tag">JavaScript</span><span class="skill-tag">Python</span><span class="skill-tag">bullshit</span></div></div><div class="profile-section"><h3>📂 精选项目</h3><ul class="repo-list-mini"><li><a class="repo-title">个人网站</a><span class="repo-lang"><span class="mini-dot" style="background:#e34c26;"></span>HTML/CSS/JS</span></li><li><a class="repo-title">天气应用</a><span class="repo-lang"><span class="mini-dot" style="background:#61dafb;"></span>React</span></li><li><a class="repo-title">待办事项</a><span class="repo-lang"><span class="mini-dot" style="background:#42b883;"></span>Vue</span></li><li><a class="repo-title">Minecraft</a><span class="repo-lang"><span class="mini-dot" style="background:#b07219;"></span>Java</span></li></ul></div>${iv ? `<div class="inline-password-area" id="ipArea" style="display:none;"><input type="password" id="ipInput" placeholder="密码" maxlength="20"/><button class="btn-confirm-inline" id="ipConfirm">确认</button><span class="password-error-inline" id="ipError">密码错误</span></div>` : ""}</div>`;
+            $("abBtn").addEventListener("click", () =>
+              handleAction({ action: "intro" }),
+            );
+            if (iv) {
+              const saBtn = $("saBtn"),
+                ipArea = $("ipArea"),
+                ipInput = $("ipInput"),
+                ipConfirm = $("ipConfirm"),
+                ipError = $("ipError");
+              ipError.style.display = "none";
+              saBtn.addEventListener("click", () => {
+                ipArea.style.display = "flex";
+                saBtn.style.display = "none";
+                ipInput.focus();
+              });
+              ipConfirm.addEventListener("click", () => {
+                if (ipInput.value === ADMIN_PASSWORD) setMode("admin");
+                else {
+                  ipError.style.display = "block";
+                  ipInput.value = "";
+                }
+              });
+              ipInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") ipConfirm.click();
+              });
+            }
+            break;
+          case "project":
+            cardContent.innerHTML = renderRepoList(projectData, "project");
+            attachRepoCardEvents($("rgGrid"), projectData);
+            setupListBackBtn();
+            break;
+          case "minecraft":
+            cardContent.innerHTML = renderGameCards(
+              minecraftItems,
+              "minecraft",
+            );
+            $("gbBtn").addEventListener("click", () =>
+              handleAction({ action: "intro" }),
+            );
+            attachGameCardEvents($("rgGrid"), minecraftItems, "minecraft");
+            break;
+          case "pvz":
+            cardContent.innerHTML = renderGameCards(pvzItems, "pvz");
+            $("gbBtn").addEventListener("click", () =>
+              handleAction({ action: "intro" }),
+            );
+            attachGameCardEvents($("rgGrid"), pvzItems, "pvz");
+            break;
+          case "minecraft_detail":
+          case "pvz_detail":
+            if (currentUnsubscribe) currentUnsubscribe();
+            cardContent.innerHTML = renderLinkDetail(item.data);
+            const ba =
+              item.backAction ||
+              (item.action === "minecraft_detail" ? "minecraft" : "pvz");
+            $("blBtn").addEventListener("click", () =>
+              handleAction({ action: ba }),
+            );
+            currentUnsubscribe = initComments(item.data.id);
+            currentCategory = ba;
+            break;
+          case "admin":
+            if (currentMode !== "admin") return;
+            currentCategory = "admin";
+            cardContent.innerHTML = `<button class="back-btn" id="adBtn"><i>←</i> 返回</button><div class="comments-section" id="comments-container"></div>`;
+            $("adBtn").addEventListener("click", () =>
+              handleAction({ action: "intro" }),
+            );
+            currentUnsubscribe = initAdminPanel();
+            break;
+          case "link":
+            if (item.url) window.open(item.url, "_blank");
+            cardContent.innerHTML = `<div class="info-block"><h2>社交链接</h2><p>已在新标签页打开 <strong>${item.label}</strong></p><ul class="link-list"><li><a href="${item.url}" target="_blank">${item.url}</a></li></ul></div>`;
+            break;
+          default:
+            cardContent.innerHTML = `<div class="info-block"><h2>${item.label}</h2><p>开发中...</p></div>`;
+        }
+      }
+
+      $("profileBadge").addEventListener("click", () =>
+        handleAction({ action: "about" }),
+      );
+      const tr = $("treeRoot");
+      tr.innerHTML = "";
+      tr.appendChild(buildTree(tr, getMenuData()));
+      cardContent.innerHTML = "";
+
+      setCardHeight();
+      updateLayout(MAX_TOP);
+      setMainCardTop(MAX_TOP);
+    </script>
+  </body>
+</html>
