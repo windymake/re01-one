@@ -1148,6 +1148,7 @@
         orderBy,
         onSnapshot,
         serverTimestamp,
+        getDocs,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
       import {
         getAuth,
@@ -1169,15 +1170,20 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
       const auth = getAuth(app);
-      const authReady = new Promise((r) =>
-        onAuthStateChanged(auth, (u) =>
-          u
-            ? r(u)
-            : signInAnonymously(auth)
-                .then(r)
-                .catch(() => r(null)),
-        ),
-      );
+
+      // 修正 authReady：确保返回用户对象
+      const authReady = new Promise((resolve) => {
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            resolve(user);
+          } else {
+            signInAnonymously(auth)
+              .then((cred) => resolve(cred.user))
+              .catch(() => resolve(null));
+          }
+        });
+      });
+
       const ADMIN_PASSWORD = "feng";
       let currentMode = null,
         currentCategory = null,
@@ -1580,7 +1586,7 @@
         r.appendChild(buildTree(r, getMenuData()));
       }
 
-      // ========== 优化后的 initComments 函数 ==========
+      // ========== 优化后的 initComments 函数（进一步强化） ==========
       function initComments(repoId) {
         const ct = $("comments-container");
         if (!ct) return;
@@ -1608,7 +1614,7 @@
         const commentAuthor = $("cfAuthor");
         const commentText = $("cfText");
 
-        // 查询：只按 repoId 过滤，不排序（避免复合索引）
+        // 查询：只按 repoId 过滤，不排序
         const q = query(
           collection(db, "comments"),
           where("repoId", "==", repoId),
@@ -1617,13 +1623,12 @@
         let unsubscribe = null;
         let retryCount = 0;
         const MAX_RETRIES = 3;
-        let snapshotReceived = false; // 是否已收到快照（用于超时）
+        let snapshotReceived = false;
 
         const cleanup = () => {
           if (unsubscribe) unsubscribe();
         };
 
-        // 渲染评论列表（客户端按时间降序排序）
         const renderComments = (comments) => {
           if (!comments.length) {
             commentList.innerHTML =
@@ -1650,7 +1655,6 @@
             .join("");
         };
 
-        // 设置监听（需在认证完成后）
         const setupListener = () => {
           unsubscribe = onSnapshot(
             q,
@@ -1680,28 +1684,46 @@
           );
         };
 
-        // 3秒超时：若未收到任何快照，则显示“暂无留言”
+        // 主动查询一次，避免监听延迟
+        const fetchOnce = async () => {
+          try {
+            await authReady;
+            const snapshot = await getDocs(q);
+            snapshotReceived = true;
+            const comments = [];
+            snapshot.forEach((doc) =>
+              comments.push({ id: doc.id, ...doc.data() }),
+            );
+            renderComments(comments);
+          } catch (err) {
+            console.error("主动查询失败:", err);
+            // 不覆盖监听错误处理
+          }
+        };
+
+        // 3秒超时
         const timeout = setTimeout(() => {
           if (!snapshotReceived) {
             commentList.innerHTML = '<li class="no-comments">暂无留言</li>';
-            snapshotReceived = true; // 阻止后续更新覆盖提示（仍可提交）
+            snapshotReceived = true;
           }
         }, 3000);
 
-        // 等待认证完成后初始化监听
+        // 先主动查询，再建立监听
         (async () => {
           await authReady;
+          fetchOnce();
           setupListener();
         })();
 
-        // 提交留言（乐观更新 + 自动重试）
+        // 提交留言
         $("cfForm").addEventListener("submit", async (e) => {
           e.preventDefault();
           const author = commentAuthor.value.trim();
           const text = commentText.value.trim();
           if (!author || !text) return;
 
-          // 乐观更新：立即插入列表顶部
+          // 乐观更新
           const tempComment = {
             id: "temp_" + Date.now(),
             author,
@@ -1722,18 +1744,21 @@
           showToast("留言已提交，正在同步...");
 
           try {
-            await authReady; // 确保认证完成
+            const user = await authReady;
+            if (!user) {
+              throw new Error("匿名认证失败");
+            }
             await addDoc(collection(db, "comments"), {
               repoId,
               author,
               text,
               timestamp: serverTimestamp(),
             });
-            // 成功：无需手动处理，监听会自动更新
+            showToast("留言保存成功");
           } catch (err) {
             console.error("留言提交失败:", err);
-            showToast("同步失败，请检查网络连接");
-            // 失败时尝试重新监听以恢复数据
+            showToast("留言保存失败，请检查网络或权限");
+            // 失败时重新建立监听
             if (unsubscribe) unsubscribe();
             snapshotReceived = false;
             setupListener();
@@ -1791,12 +1816,26 @@
           if (unsubscribe) unsubscribe();
         };
 
-        // 查询所有留言（不排序，避免复合索引）
         const q = query(collection(db, "comments"));
 
-        // 等待认证完成后监听
         (async () => {
           await authReady;
+          // 主动查询一次
+          try {
+            const snapshot = await getDocs(q);
+            loaded = true;
+            allComments = [];
+            snapshot.forEach((doc) =>
+              allComments.push({ docId: doc.id, ...doc.data() }),
+            );
+            renderFiltered();
+          } catch (err) {
+            console.error("主动查询失败:", err);
+            commentList.innerHTML =
+              '<li class="no-comments">加载失败，请检查网络</li>';
+            loaded = true;
+          }
+          // 建立监听
           unsubscribe = onSnapshot(
             q,
             (snapshot) => {
@@ -1809,14 +1848,14 @@
             },
             (error) => {
               console.error("管理面板留言加载失败:", error);
+              if (!loaded)
+                commentList.innerHTML =
+                  '<li class="no-comments">加载失败，请检查网络</li>';
               loaded = true;
-              commentList.innerHTML =
-                '<li class="no-comments">加载失败，请检查网络</li>';
             },
           );
         })();
 
-        // 5秒超时提示
         const timeout = setTimeout(() => {
           if (!loaded) {
             commentList.innerHTML =
@@ -1841,7 +1880,6 @@
             );
           }
 
-          // 客户端按时间降序排序
           filtered.sort(
             (a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0),
           );
